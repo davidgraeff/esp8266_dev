@@ -1,0 +1,13 @@
+[Unit]
+Description=SimpleUDP Remote Controll
+After=network-online.target
+Requires=network-online.target
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=0
+ExecStartPre=/usr/bin/killall pc_simpleudp
+ExecStart=/home/david/bin/pc_simpleudp
+
+[Install]
+WantedBy=multi-user.target

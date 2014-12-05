@@ -1,0 +1,57 @@
+CDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+export ESP_OPEN_SDK=$CDIR/../esp-open-sdk
+export ESPTOOL_DIR=$ESP_OPEN_SDK/esptool
+export XTENSA_TOOLS_ROOT=$ESP_OPEN_SDK/xtensa-lx106-elf/bin
+export ESPTOOL=$ESPTOOL_DIR/esptool.py
+export PATH=$XTENSA_TOOLS_ROOT:$ESPTOOL_DIR:$PATH
+
+export SDK_PATH=$CDIR/esp_iot_rtos_sdk
+export BIN_PATH=$CDIR/esp_iot_rtos_sdk/bin
+
+: ${ESPPORT=/dev/ttyUSB0}
+
+function esp_check_speed() {
+    if [ -z "$1" ]                           # Is parameter #1 zero length?
+    then
+     echo "Default Baudrate 230400"  # Or no parameter passed.
+     BAUDRATE_FLASH=230400
+    else
+     echo "Baudrate is \"$1\""
+     BAUDRATE_FLASH=$1
+    fi
+
+    if [ $BAUDRATE_FLASH = "0" ]; then
+    BADRATE_CMD=
+    BAUDRATE_FLASH=
+    else
+    BADRATE_CMD=--baud
+    fi
+
+    killall -q screen;
+}
+
+function esp_make() {
+    make BOOT=new APP=1 SPI_SPEED=40 SPI_MODE=DIO SPI_SIZE_MAP=6
+    make BOOT=new APP=2 SPI_SPEED=40 SPI_MODE=DIO SPI_SIZE_MAP=6
+}
+
+function esp_flash () {
+    esp_check_speed
+    esp_make && \
+    $ESPTOOL $BADRATE_CMD $BAUDRATE_FLASH --port $ESPPORT write_flash -ff 40m -fm dio -fs 32m 0x1000 $BIN_PATH/upgrade/user1.4096.new.6.bin
+}
+
+function esp_write_bootloader() {
+    esp_check_speed
+    $ESPTOOL $BADRATE_CMD $BAUDRATE_FLASH --port $ESPPORT write_flash -ff 40m -fm dio -fs 32m 0x00000 "$BIN_PATH/boot_v1.4(b1).bin"
+}
+
+function esp_reset_config() {
+    esp_check_speed
+    $ESPTOOL $BADRATE_CMD $BAUDRATE_FLASH --port $ESPPORT write_flash -ff 40m -fm dio -fs 32m 0x7C000 "$BIN_PATH/esp_init_data_default.bin"
+    $ESPTOOL $BADRATE_CMD $BAUDRATE_FLASH --port $ESPPORT write_flash -ff 40m -fm dio -fs 32m 0x7E000 "$BIN_PATH/blank.bin"
+}
+
+function esp_dbg() {
+    screen /dev/ttyUSB0 115200
+}

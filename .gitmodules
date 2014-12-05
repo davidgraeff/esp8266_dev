@@ -1,0 +1,3 @@
+[submodule "rtos_sdk"]
+	path = esp_iot_rtos_sdk
+	url = https://github.com/espressif/esp_iot_rtos_sdk.git
